@@ -1,97 +1,105 @@
 export CURRENTUSER=$(whoami)
 SCRIPTDIR=$(readlink -f "$0")
 CURRENTDIR=$(dirname "$SCRIPTDIR")
-TOOLS=$CURRENTDIR/tools
-A=$CURRENTDIR/system/
-B=$CURRENTDIR/vendor/
-C=$CURRENTDIR/system_ext/
-D=$CURRENTDIR/product/
-E=$CURRENTDIR/odm/
+TOOLS=$CURRENTDIR
+IMG=$CURRENTDIR/images
+A=$CURRENTDIR/images/system
+B=$CURRENTDIR/images/vendor
+C=$CURRENTDIR/images/system_ext
+D=$CURRENTDIR/images/product
+E=$CURRENTDIR/images/odm
 ROM=$(readlink -f "$1")
-if [[ -z $ROM ]] 
-then
-echo "usage: ./a.sh rom.zip" && exit
-fi
+
 set -e
 
 #MI
-sudo chmod +x $TOOLS/*
-sudo apt-get install p7zip-full p7zip-rar
-sudo rm -rf $A $B $C $D $E || true
-mkdir $A $B $C $D $E || true
+rm -r $IMG || true
+mkdir $IMG $A $B $C $D $E 
 printf "\n" 
 printf "\n" 
 printf "extracting zip files..."
 printf "\n" 
 printf "\n" 
-
-#Extract zip
-unzip -d $A $ROM system.transfer.list system.new.dat.br || true
+sleep 1s
+#SYSTEM
+if unzip -d $A $ROM system.transfer.list system.new.dat.br
+then
+brotli -j -v -d $A/system.new.dat.br -o $A/system.new.dat 
+$TOOLS/sdat2img/sdat2img.py $A/system.transfer.list $A/system.new.dat $A/system.img 
 printf "\n" 
-unzip -d $B $ROM vendor.transfer.list vendor.new.dat.br || true
-printf "\n" 
-unzip -d $C $ROM system_ext.transfer.list system_ext.new.dat.br || true
-printf "\n" 
-unzip -d $D $ROM product.transfer.list product.new.dat.br || true
-printf "\n" 
-unzip -d $E $ROM odm.transfer.list odm.new.dat.br || true
-printf "\n" 
-
-#IMGS
-brotli -j -v -d $A/system.new.dat.br -o $A/system.new.dat || true
-$TOOLS/sdat2img.py $A/system.transfer.list $A/system.new.dat $A/system.img || true
-printf "\n" 
-brotli -j -v -d $B/vendor.new.dat.br -o $B/vendor.new.dat || true
-$TOOLS/sdat2img.py $B/vendor.transfer.list $B/vendor.new.dat $B/vendor.img || true
-printf "\n"
-brotli -j -v -d $C/system_ext.new.dat.br -o $C/system_ext.new.dat || true
-$TOOLS/sdat2img.py $C/system_ext.transfer.list $C/system_ext.new.dat $C/system_ext.img || true
-printf "\n"
-brotli -j -v -d $D/product.new.dat.br -o $D/product.new.dat || true
-$TOOLS/sdat2img.py $D/product.transfer.list $D/product.new.dat $D/product.img || true
-printf "\n"
-brotli -j -v -d $E/odm.new.dat.br -o $E/odm.new.dat || true
-$TOOLS/sdat2img.py $E/odm.transfer.list $E/odm.new.dat $E/odm.img || true
-printf "\n"
-
-rm -r $A/system.new.dat $A/system.transfer.list $B/vendor.new.dat $B/vendor.transfer.list $C/system_ext.new.dat $C/system_ext.transfer.list $D/product.new.dat $D/product.transfer.list $E/odm.new.dat $E/odm.transfer.list  || true
-
-#Extract 
-printf "\n" 
-printf ".dat converted to img..."
 printf "\n" 
 printf "extracting system..."
 printf "\n"
-	cd system 
-	7z x system.img || true
-	sudo rm -r system.img || true
+cd $A 
+7z x system.img 
+rm -r system.img system.new.dat system.transfer.list
+else
+echo "skipping system - not founded" 
+sleep 1s
+fi
+#VENDOR
+if unzip -d $B $ROM vendor.transfer.list vendor.new.dat.br 
+then
+printf "\n" 
+printf "\n" 
+brotli -j -v -d $B/vendor.new.dat.br -o $B/vendor.new.dat 
+$TOOLS/sdat2img/sdat2img.py $B/vendor.transfer.list $B/vendor.new.dat $B/vendor.img 
 printf "extracting vendor..."
+cd $B
+7z x vendor.img ||
+rm -r vendor.img vendor.new.dat vendor.transfer.list
+else
+echo "skipping vendor - not founded" 
+sleep 1s
+fi
+#SYSTEM_EXT
+if unzip -d $C $ROM system_ext.transfer.list system_ext.new.dat.br 
+then
+printf "\n" 
 printf "\n"
-	cd .. 
-	cd vendor 
-	7z x vendor.img || true
-	sudo rm -r vendor.img || true
+brotli -j -v -d $C/system_ext.new.dat.br -o $C/system_ext.new.dat 
+$TOOLS/sdat2img/sdat2img.py $C/system_ext.transfer.list $C/system_ext.new.dat $C/system_ext.img 
 printf "extracting system_ext..."
+cd $C 
+7z x system_ext.img 
+rm -r system_ext.img system_ext.new.dat system_ext.transfer.list
+else
+echo "skipping system_ext - not founded" 
+sleep 1s
+fi
+#PRODUCT
+if unzip -d $D $ROM product.transfer.list product.new.dat.br 
+then
+printf "\n" 
 printf "\n"
-	cd .. 
-	cd system_ext  
-	7z x system_ext.img || true
-	sudo rm -r system_ext.img || true
-	printf "extracting product..."
+brotli -j -v -d $D/product.new.dat.br -o $D/product.new.dat 
+$TOOLS/sdat2img/sdat2img.py $D/product.transfer.list $D/product.new.dat $D/product.img 
+printf "extracting product..."
+cd $D 
+7z x product.img 
+rm -r product.img product.new.dat product.transfer.list
+else
+echo "skipping product - not founded"
+sleep 1s 
+fi
+#ODM
+if unzip -d $E $ROM odm.transfer.list odm.new.dat.br 
+then
+printf "\n" 
 printf "\n"
-	cd .. 
-	cd product 
-	7z x product.img || true
-	sudo rm -r product.img || true
+brotli -j -v -d $E/odm.new.dat.br -o $E/odm.new.dat 
+$TOOLS/sdat2img/sdat2img.py $E/odm.transfer.list $E/odm.new.dat $E/odm.img 
+printf "\n"
 printf "extracting odm..."
-printf "\n"
-	cd .. 
-	cd odm  
-	7z x odm.img || true
-	sudo rm -r odm.img || true
-	
-	
-	
+cd $E
+7z x odm.img 
+rm -r odm.img odm.new.dat odm.transfer.list 
+else
+echo "skipping odm - not founded" 
+sleep 1s
+fi	
+cd $CURRENTDIR 
+mv $IMG files && mv files ..	
 printf "process finished"
 printf "\n" 
 printf "go to designed folder and you can close this terminal now..."
